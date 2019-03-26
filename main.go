@@ -19,8 +19,10 @@ func main() {
 
 	// r.Use(middleware.Logger)
 
-	r.Route("/login", func(r chi.Router) {
-		r.Get("/{user}", reqHandler)
+	r.Get("/", landingPageHandler)
+
+	r.Route("/scrape", func(r chi.Router) {
+		r.Get("/*", reqHandler)
 		r.Get("/", emptyHandler)
 	})
 	http.ListenAndServe(":3000", r)
@@ -28,16 +30,21 @@ func main() {
 
 // HTTP handler accessing the url routing parameters.
 func reqHandler(w http.ResponseWriter, r *http.Request) {
-	userID := chi.URLParam(r, "user") // from a route like /login/{user}
+	urlString := chi.URLParam(r, "*") // from a route like /scrape/{url}
 
-	var userKey key
-	userKey = "userName"
+	var urlKey key
+	urlKey = "url"
 
-	ctx := context.WithValue(r.Context(), userKey, userID)
+	ctx := context.WithValue(r.Context(), urlKey, urlString)
+	fmt.Println(ctx)
 
-	w.Write([]byte(fmt.Sprintf("Logged in as %v", ctx.Value(userKey))))
+	w.Write([]byte(fmt.Sprintf("Scraping %v", ctx.Value(urlKey))))
 }
 
 func emptyHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Please supply username"))
+	w.Write([]byte("Please supply url to scrape"))
+}
+
+func landingPageHandler(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Welcome to idgarza.dev kh scraper."))
 }
