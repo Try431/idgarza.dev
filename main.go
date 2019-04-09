@@ -1,50 +1,34 @@
 package main
 
 import (
-	"context"
 	"fmt"
+	"log"
 	"net/http"
 
+	"github.com/Try431/idgarza.dev/scrape"
 	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/render"
 )
 
 var port int
 
 type key string
 
+func Routes() *chi.Mux {
+	r := chi.NewRouter()
+	r.Use(
+		render.SetContentType(render.ContentTypeJSON),
+		middleware.Logger)
+	r.Route("/v1", func(r chi.Router) {
+		r.Mount("/api/scrape", scrape.Routes())
+	})
+	return r
+}
+
 func main() {
 	port = 3000
 	fmt.Println("Connecting to port", port)
-	r := chi.NewRouter()
-
-	// r.Use(middleware.Logger)
-
-	r.Get("/", landingPageHandler)
-
-	r.Route("/scrape", func(r chi.Router) {
-		r.Get("/*", reqHandler)
-		r.Get("/", emptyHandler)
-	})
-	http.ListenAndServe(":3000", r)
-}
-
-// HTTP handler accessing the url routing parameters.
-func reqHandler(w http.ResponseWriter, r *http.Request) {
-	urlString := chi.URLParam(r, "*") // from a route like /scrape/{url}
-
-	var urlKey key
-	urlKey = "url"
-
-	ctx := context.WithValue(r.Context(), urlKey, urlString)
-	fmt.Println(ctx)
-
-	w.Write([]byte(fmt.Sprintf("Scraping %v", ctx.Value(urlKey))))
-}
-
-func emptyHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Please supply url to scrape"))
-}
-
-func landingPageHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Welcome to idgarza.dev kh scraper."))
+	router := Routes()
+	log.Fatal(http.ListenAndServe(":3000", router))
 }
